@@ -1,4 +1,4 @@
-# 🥾 TrailBuddy
+# TrailBuddy
 
 TrailBuddy is a **Flutter application** designed to enhance the hiking experience by allowing users to **view maps**, **track their location**, and **report trail conditions** such as obstacles, closures, or hazards. It works on both **mobile and Windows desktop** platforms.
 
