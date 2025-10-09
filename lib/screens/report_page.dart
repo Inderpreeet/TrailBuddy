@@ -1,10 +1,13 @@
-﻿import 'dart:convert';
-import 'dart:io';
+// lib/screens/report_page.dart
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
+
+import '../models/trail_report.dart';
+import '../services/report_storage.dart';
+
+import 'reports_list_page.dart';
 
 class ReportPage extends StatefulWidget {
   const ReportPage({super.key});
@@ -15,19 +18,37 @@ class ReportPage extends StatefulWidget {
 
 class _ReportPageState extends State<ReportPage> {
   final _formKey = GlobalKey<FormState>();
-  final _descCtrl = TextEditingController();
+  final _notesCtrl = TextEditingController();
+  final _storage = ReportStorage();
+
+  // form state
+  String? _condition; // required
   String? _photoPath;
-  bool _saving = false;
   Position? _pos;
+  bool _saving = false;
+
+  final _conditions = const <String>[
+    'Good',
+    'Muddy',
+    'Icy/Slippery',
+    'Fallen tree',
+    'Flooded',
+    'Closure',
+    'Wildlife',
+    'Other',
+  ];
 
   @override
   void dispose() {
-    _descCtrl.dispose();
+    _notesCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _pickPhoto() async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.image, allowMultiple: false);
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: false,
+    );
     if (result != null && result.files.single.path != null) {
       setState(() => _photoPath = result.files.single.path!);
     }
@@ -37,7 +58,10 @@ class _ReportPageState extends State<ReportPage> {
     try {
       final enabled = await Geolocator.isLocationServiceEnabled();
       if (!enabled) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Location services disabled')));
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location services are disabled')),
+        );
         return;
       }
       var perm = await Geolocator.checkPermission();
@@ -45,54 +69,66 @@ class _ReportPageState extends State<ReportPage> {
         perm = await Geolocator.requestPermission();
       }
       if (perm == LocationPermission.deniedForever) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('Location permission permanently denied')));
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location permission permanently denied')),
+        );
         return;
       }
-      final p = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      final p = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
       setState(() => _pos = p);
     } catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not get location')));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not get location')),
+      );
     }
-  }
-
-  Future<File> _reportsFile() async {
-    final dir = await getApplicationDocumentsDirectory();
-    return File('${dir.path}/reports.json');
   }
 
   Future<void> _saveReport() async {
     if (!_formKey.currentState!.validate()) return;
+
+    // Require a location for a useful report
+    if (_pos == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please capture your location first')),
+      );
+      return;
+    }
+
     setState(() => _saving = true);
     try {
-      final file = await _reportsFile();
-      List<dynamic> items = [];
-      if (await file.exists()) {
-        final text = await file.readAsString();
-        if (text.trim().isNotEmpty) items = jsonDecode(text) as List<dynamic>;
-      }
-      final id = const Uuid().v4();
-      items.add({
-        'id': id,
-        'description': _descCtrl.text.trim(),
-        'photoPath': _photoPath,
-        'timestamp': DateTime.now().toIso8601String(),
-        'latitude': _pos?.latitude,
-        'longitude': _pos?.longitude,
+      final report = TrailReport(
+        id: const Uuid().v4(),
+        createdAt: DateTime.now(),
+        latitude: _pos!.latitude,
+        longitude: _pos!.longitude,
+        condition: _condition!,
+        notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+        photoPath: _photoPath,
+      );
+
+      await _storage.add(report);
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Report saved locally')),
+      );
+
+      // reset form
+      setState(() {
+        _condition = null;
+        _photoPath = null;
+        _pos = null;
       });
-      await file.writeAsString(const JsonEncoder.withIndent('  ').convert(items));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Report saved locally')));
-        _descCtrl.clear();
-        setState(() {
-          _photoPath = null;
-          _pos = null;
-        });
-      }
+      _notesCtrl.clear();
     } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to save report')));
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to save report')),
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -102,24 +138,52 @@ class _ReportPageState extends State<ReportPage> {
   Widget build(BuildContext context) {
     final locText = _pos == null
         ? 'No location captured'
-        : 'Lat: ${_pos!.latitude.toStringAsFixed(5)}, Lng: ${_pos!.longitude.toStringAsFixed(5)}';
+        : 'Lat: ${_pos!.latitude.toStringAsFixed(5)}, '
+          'Lng: ${_pos!.longitude.toStringAsFixed(5)}';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Report Trail Condition')),
+      appBar: AppBar(
+        title: const Text('Report Trail Condition'),
+        actions: [
+          IconButton(
+            tooltip: 'Saved Reports',
+            icon: const Icon(Icons.list),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const ReportsListPage()),
+              );
+            },
+          ),
+        ],
+      ),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            TextFormField(
-              controller: _descCtrl,
-              maxLines: 3,
+            DropdownButtonFormField<String>(
+              value: _condition,
+              items: _conditions
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                  .toList(),
               decoration: const InputDecoration(
-                labelText: 'Description',
-                hintText: 'e.g., Fallen tree blocking path near marker 12',
+                labelText: 'Condition',
                 border: OutlineInputBorder(),
               ),
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter a description' : null,
+              validator: (v) => (v == null || v.isEmpty)
+                  ? 'Please select a condition'
+                  : null,
+              onChanged: (v) => setState(() => _condition = v),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _notesCtrl,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Notes (optional)',
+                hintText: 'e.g., Fallen tree near marker 12',
+                border: OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 12),
             Row(
@@ -155,7 +219,10 @@ class _ReportPageState extends State<ReportPage> {
             FilledButton.icon(
               onPressed: _saving ? null : _saveReport,
               icon: _saving
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      width: 18, height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : const Icon(Icons.save),
               label: const Text('Save Report'),
             ),
@@ -165,3 +232,4 @@ class _ReportPageState extends State<ReportPage> {
     );
   }
 }
+
