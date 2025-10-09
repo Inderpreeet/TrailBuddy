@@ -35,12 +35,6 @@ TrailBuddy is a **Flutter application** designed to enhance the hiking experienc
 
 ---
 
-## 🚀 Getting Started
-
-### 1️⃣ Clone the repository
-```bash
-git clone https://github.com/YOUR_USERNAME/trailbuddy.git
-cd trailbuddy
 
 🧠 Future Enhancements
 
@@ -61,3 +55,4 @@ This project is developed for academic purposes and is not licensed for commerci
 Inderpreet Kaur A00291274
 Cambrian College — Mobile Application Development Program
 📅 Project Timeline: September – October 2025
+
