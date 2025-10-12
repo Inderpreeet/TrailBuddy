@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-// CORRECTED IMPORTS based on your screenshot:
+
 import 'package:trailbuddy/screens/map_page.dart';
 import 'package:trailbuddy/screens/report_page.dart';
 import 'package:trailbuddy/screens/profile_page.dart';
+import 'package:trailbuddy/screens/settings_screen.dart'; // <-- add this
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -15,11 +17,16 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'TrailBuddy',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        useMaterial3: true,
       ),
       home: const MainScreen(),
+      routes: {
+        // Settings route used by the gear icon on the Map page
+        '/settings': (_) => const SettingsScreen(),
+      },
     );
   }
 }
@@ -34,45 +41,34 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  // List of widgets to display in the body based on selected tab
-  static const List<Widget> _widgetOptions = <Widget>[
+  // Let each page manage its own Scaffold/AppBar.
+  static const List<Widget> _pages = <Widget>[
     MapPage(),
     ReportPage(),
     ProfilePage(),
   ];
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
+  void _onItemTapped(int index) => setState(() => _selectedIndex = index);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('TrailBuddy'),
-      ),
-      body: Center(
-        child: _widgetOptions.elementAt(_selectedIndex),
+      // ⬇️ No AppBar here (prevents double headers)
+      body: SafeArea(
+        // Keep state of each tab alive while switching
+        child: IndexedStack(
+          index: _selectedIndex,
+          children: _pages,
+        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map),
-            label: 'Map',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.report),
-            label: 'Report',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
+          BottomNavigationBarItem(icon: Icon(Icons.report), label: 'Report'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blueAccent,
+        selectedItemColor: Colors.green,
         onTap: _onItemTapped,
       ),
     );
