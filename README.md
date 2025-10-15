@@ -1,58 +1,104 @@
-# TrailBuddy
+# 🥾 TrailBuddy – Smart Hiking Companion App
 
-TrailBuddy is a **Flutter application** designed to enhance the hiking experience by allowing users to **view maps**, **track their location**, and **report trail conditions** such as obstacles, closures, or hazards. It works on both **mobile and Windows desktop** platforms.
+TrailBuddy is a **cross-platform Flutter app** designed to make hiking safer, smarter, and more interactive.  
+It enables users to **navigate offline**, **track their live location**, **report trail conditions**, and **send emergency alerts** — all while earning **badges** for achievements.
 
 ---
 
-## 📱 Features
+## 🌍 Overview
 
-- 🗺 **Interactive Map**  
-  - Uses OpenStreetMap tiles to display trails and locations.  
-  - Centers on the user's current location with a single tap.
+TrailBuddy was built as part of a **Capstone Project** for the *Northern Greenbelt Conservation Authority (NGCA)*.  
+The app addresses real-world challenges such as hikers getting lost or losing network access by offering **offline maps**, **GPS tracking**, and **emergency support** even in remote areas.
 
-- 📝 **Trail Condition Reports**  
-  - Users can describe issues (e.g., fallen trees, mud, closures).  
-  - Attach photos and capture GPS coordinates.  
-  - Saved reports are stored locally on the device.
+---
 
-- 📋 **Saved Reports List**  
-  - View previously saved reports in a scrollable list.  
-  - Delete unwanted reports.  
-  - Preview attached photos with a tap.
+## 🚀 Key Features
+
+- 🗺 **Offline Map Navigation** – Explore trails without internet using cached map tiles.  
+- 📍 **Real-Time GPS Tracking** – Get your exact location on the map.  
+- 📷 **Trail Condition Reports** – Submit issues or photos about trail hazards.  
+- 🏅 **Badge Rewards** – Earn badges for completed trails, reports, and safe hikes.  
+- 🚨 **Emergency Notifications (SOS)** – Sends alert with your coordinates in one tap.  
+- 📡 **Cross-Platform Support** – Runs on both Android and Windows.  
 
 ---
 
 ## 🧰 Tech Stack
 
-- **Framework:** Flutter 3.35.4  
-- **Languages:** Dart  
-- **Packages:**  
-  - `geolocator` – Location access  
-  - `flutter_map` – Map display with OpenStreetMap  
-  - `file_picker` – Photo attachment  
-  - `path_provider` – Local storage  
-  - `uuid` – Unique report IDs  
+| Technology | Purpose |
+|-------------|----------|
+| **Flutter / Dart** | Cross-platform development |
+| **flutter_map** | Map visualization |
+| **flutter_map_tile_caching** | Offline map caching |
+| **geolocator** | Location and GPS access |
+| **flutter_local_notifications** | Alerts and SOS |
+| **OpenStreetMap API** | Open data map provider |
+| **Visual Studio Code** | Primary IDE |
 
 ---
 
+## ⚙️ Installation & Setup
 
-🧠 Future Enhancements
+### 1️⃣ Clone the Repository
+```bash
+git clone https://github.com/Inderpreeet/TrailBuddy.git
+cd TrailBuddy
 
-Cloud sync for reports
+2️⃣ Install Dependencies
+flutter pub get
 
-User authentication
+3️⃣ Configure Android Permissions
 
-Trail route overlays
+Open android/app/src/main/AndroidManifest.xml and ensure these permissions are added:
 
-Offline map downloads
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
-📄 License
+4️⃣ Request Runtime Location Permissions
 
-This project is developed for academic purposes and is not licensed for commercial distribution.
+Add this in your Dart file:
 
-👤 Author
+LocationPermission permission = await Geolocator.checkPermission();
+if (permission == LocationPermission.denied) {
+  permission = await Geolocator.requestPermission();
+}
 
-Inderpreet Kaur A00291274
-Cambrian College — Mobile Application Development Program
-📅 Project Timeline: September – October 2025
+5️⃣ Run the App
+flutter run -d <device_id>
 
+6️⃣ Build APK for Testing
+flutter build apk --debug
+
+
+Feature	Description
+🗺 Offline Map	Cached trail maps with GPS marker
+📍 GPS Tracking	Real-time position updates
+🚨 Emergency Alert	Sends instant SOS message
+🏅 Badges Page	Displays earned and upcoming badges
+🎯 Future Enhancements
+
+🤖 AI-driven route suggestions
+
+🌦 Weather integration & air-quality alerts
+
+⌚ Smartwatch compatibility
+
+☁️ Cloud sync for reports & progress
+
+💬 Community chat for hikers
+
+👩‍💻 Author
+
+Inderpreet Kaur
+Mobile Application Development Program – Cambrian College
+📅 Capstone Project (2025)
+🔗 GitHub Profile
+
+📜 License
+
+This project is intended for educational and demonstration purposes.
+All map data © OpenStreetMap Contributors
+.
